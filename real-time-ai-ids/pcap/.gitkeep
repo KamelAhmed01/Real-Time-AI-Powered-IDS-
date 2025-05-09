@@ -1,0 +1,3 @@
+# This directory is a placeholder for PCAP files used in training/testing.
+# Add your PCAP files here (e.g., from CIC-IDS2017 dataset).
+# This directory is included in .gitignore to avoid committing large data files.
