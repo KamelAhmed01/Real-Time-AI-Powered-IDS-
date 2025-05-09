@@ -137,16 +137,16 @@ real-time-ai-ids/
 
 ## 📄 Documentation
 
-For a more in-depth understanding of the project design, architecture, implementation details, and limitations, please refer to the [Project Report](./report.md).
+For a more in-depth understanding of the project design, architecture, implementation details, and limitations, please refer to the [Project Report](./Project_Report_Real-Time_AI-Powered_IDS.pdf).
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](your-repo-issues-url-if-applicable).
+Contributions, issues, and feature requests are welcome!
 
 ---
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE.md](your-repo-license-url-if-applicable) file for details (assuming MIT, adjust if different).
+This project is licensed under the MIT License.
