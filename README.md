@@ -1,5 +1,7 @@
 # Real-Time AI-Driven Intrusion Detection System
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Python Version](https://img.shields.io/badge/python-3.x-blue.svg) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+
 ## Overview
 
 This project implements a real-time Intrusion Detection System (IDS) utilizing Suricata for network traffic analysis, nDPI for deep packet inspection, an Isolation Forest machine learning model for anomaly detection, and the ELK stack (Elasticsearch, Kibana, Filebeat) for log management and visualization. The entire system is containerized using Docker for ease of deployment and an out-of-the-box experience.
