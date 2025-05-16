@@ -1,0 +1,158 @@
+%YAML 1.1
+---
+
+# Suricata configuration file.
+# Note: Features like nDPI are enabled during compilation (see Dockerfile.suricata)
+# and utilized by relevant app-layer parsers.
+
+# Max number of pending packets for af-packet.
+max-pending-packets: 1024
+
+# Default rule path.
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - suricata.rules # Main rules file managed by suricata-update
+  - custom.rules   # Custom user-defined rules
+
+# Classification and reference config files (standard paths)
+classification-file: /etc/suricata/classification.config
+reference-config-file: /etc/suricata/reference.config
+
+# Engine configuration
+# Set to tap for inline mode, autofp for IDS (Auto Flow Pinned)
+# autofp is a good default for IDS mode on multi-core systems.
+# runmode: autofp
+
+# AF_PACKET configuration for network interface capture
+af-packet:
+  - interface: eth0 # This will be overridden by the -i <interface> CLI argument from docker-compose.yml
+    # Number of receive threads. Typically set to number of CPU cores for this interface.
+    # threads: 1
+    cluster-id: 99
+    cluster-type: cluster_flow # Default, good for IDS
+    defrag: yes
+    use-mmap: yes
+    # tpacket-v3: yes # If kernel supports it, for better performance
+
+# Outputs configuration
+outputs:
+  # EVE JSON log output
+  - eve-log:
+      enabled: yes
+      filetype: regular         # Log to a regular file
+      filename: eve.json        # Filename in default-log-dir (/var/log/suricata/)
+      # Buffering settings
+      # buffered: true
+      # buffer-size: 65535
+      # flush-interval: 1000 # milliseconds
+      types:
+        - alert:                # Alert events
+            # payload: yes        # Log payload printable chars
+            # payload-buffer-size: 4kb # Max size of payload buffer
+            # payload-printable: yes
+            # packet: yes         # Log raw packet
+            # http-body: yes      # Log HTTP body
+            # tls-certs: yes      # Log TLS certificates
+            # tagged-packets: yes # Include tagged packets for alerts
+        - flow:                 # Flow events
+            enabled: yes
+            # Fields to include in flow records, as per user request
+            fields: [start, end, pkts_toserver, pkts_toclient, bytes_toserver, bytes_toclient, app_proto, src_ip, dest_ip, src_port, dest_port, proto]
+        - http:                 # HTTP transaction log
+            extended: yes       # Log extended HTTP fields
+        - dns:                  # DNS query/response log
+            # version: 2 # For more detailed DNS logging
+        - tls:                  # TLS handshake parameters
+            extended: yes       # Log extended TLS fields
+        - ssh
+        - smtp
+        - nfs
+        - smb
+        - krb5
+        - dhcp
+        - rdp
+        - ftp
+        - tftp
+        - ikev2
+        - stats:
+            totals: yes         # stats for all threads merged together
+            threads: no         # per thread stats
+            # interval: 8s
+        # - drop:               # Dropped packets (if any)
+        # - anomaly:            # Anomaly events (experimental)
+
+# Logging configuration
+logging:
+  # Default log level
+  default-log-level: notice # Options: emergency, alert, critical, error, warning, notice, info, debug
+  # Default output for non-EVE logs (Suricata's own operational logs)
+  outputs:
+  - console:
+      enabled: yes
+  - file:
+      enabled: no # Typically EVE log is preferred for machine parsing
+      filename: /var/log/suricata/suricata.log
+      level: info
+
+# Advanced settings (usually defaults are fine)
+host-os-policy:
+  # Make sure to list all IP addresses for the host running suricata here.
+  # These are used to determine flow direction.
+  # This might be less critical when SURICATA_INTERFACE is dynamically set and network_mode: host is used.
+  # localhost: [127.0.0.1, ::1]
+  # Example for a specific network:
+  # my-network: [192.168.1.0/24, 10.0.0.0/8, fe80::/64]
+
+# Application layer protocol parsers configuration
+app-layer:
+  protocols:
+    tls:
+      #certs-log-dir: certs # Directory to store certs in if 'log-certs' is enabled
+      #log-certs: yes
+      #log-certs-extended: yes
+      # ndpi specific settings for TLS, if needed and available in this Suricata version
+      # ndpi:
+      #   enabled: yes # nDPI is globally enabled at compile time
+      #   ja3-fingerprints: yes
+    http:
+      # libhtp configuration
+      # For more details see http://www.openinfosecfoundation.org/projects/libhtp
+      # Default configuration is usually fine.
+      # server-fingerprint:
+      #   enabled: yes
+      #   fingerprint-file: http-fingerprint.config
+
+# Define the flow timeout values in seconds
+flow-timeouts:
+  default:
+    new: 30
+    established: 600
+    closed: 0
+    emergency-new: 10
+    emergency-established: 100
+    emergency-closed: 0
+  tcp:
+    new: 60
+    established: 3600
+    closed: 120
+    emergency-new: 10
+    emergency-established: 300
+    emergency-closed: 20
+  udp:
+    new: 30
+    established: 300
+    emergency-new: 10
+    emergency-established: 100
+  icmp:
+    new: 30
+    established: 300
+    emergency-new: 10
+    emergency-established: 100
+
+# Enable nDPI for app_proto detection (already enabled at compile time)
+# This section ensures app_proto is populated using nDPI if available
+app-layer-appids:
+  enabled: yes
+  app-decoder: yes
+  app-parser: yes
+

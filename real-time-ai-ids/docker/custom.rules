@@ -1,0 +1,2 @@
+alert tcp any any -> any any (msg:"Possible SYN Flood"; flags:S,not A; flow:to_server; threshold: type both, track by_src, count 100, seconds 1; sid:1000001; rev:1;)
+

@@ -1,0 +1,39 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential autoconf automake libtool git \
+    libpcap-dev libpcre3-dev libyaml-dev zlib1g-dev \
+    libjansson-dev rustc cargo libmagic-dev libnetfilter-queue-dev \
+    python3-pip curl wget
+
+# Install nDPI
+RUN git clone https://github.com/ntop/nDPI.git && \
+    cd nDPI && ./autogen.sh && ./configure && make && make install && ldconfig
+
+# Install Suricata
+RUN git clone https://github.com/OISF/suricata.git && \
+    cd suricata && git checkout suricata-7.0.10 && \
+    ./autogen.sh && \
+    ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+    --enable-nfqueue \
+    --enable-ndpi --with-ndpi-includes=/usr/local/include --with-ndpi-libraries=/usr/local/lib \
+    && make && make install-full && ldconfig
+
+# Install suricata-update and download rules
+RUN pip3 install --upgrade pip && pip3 install suricata-update
+RUN mkdir -p /etc/suricata/rules /var/lib/suricata/rules # Ensure directories exist
+RUN suricata-update enable-source oisf/trafficid # For app_proto detection with trafficid rules
+RUN suricata-update enable-source et/open
+RUN suricata-update -o /etc/suricata/rules --no-test # Output rules to /etc/suricata/rules
+
+# Copy custom rules into the image. custom.rules should be in the build context (docker/ directory)
+COPY custom.rules /etc/suricata/rules/custom.rules
+
+# Set default interface, can be overridden by docker-compose
+ENV SURICATA_INTERFACE eth0
+
+# Default command can be suricata itself, but docker-compose overrides it.
+# CMD ["suricata", "-c", "/etc/suricata/suricata.yaml", "-i", "$SURICATA_INTERFACE"]
+
