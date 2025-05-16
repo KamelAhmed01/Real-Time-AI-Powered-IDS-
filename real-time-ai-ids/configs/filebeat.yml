@@ -1,0 +1,16 @@
+filebeat.modules:
+  - module: suricata
+    eve:
+      enabled: true
+      var.paths: ["/var/log/suricata/eve.json"]
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  username: elastic # User confirmed to leave defaults
+  password: changeme # User confirmed to leave defaults
+
+setup.kibana:
+  host: kibana:5601
+  username: elastic # User confirmed to leave defaults
+  password: changeme # User confirmed to leave defaults
+

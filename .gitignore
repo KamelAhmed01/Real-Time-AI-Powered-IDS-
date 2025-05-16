@@ -1,24 +1,53 @@
-# Logs and PCAP files
+# Ignore logs, PCAPs (except samples), CSVs (except samples), and model files
 logs/
-pcap/
 
-# Python virtual environment
-venv/
+# Ignore actual PCAP data, keep samples
+*.pcap
+!pcap/sample_benign.pcap
+!pcap/sample_attack.pcap
+
+# Ignore actual CSV data, keep samples
+*.csv
+!scripts/flows_benign.csv
+!scripts/flows_attack.csv
+
+# Ignore Python model file
+*.pkl
+
+# Python specific
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# IDE / Editor specific files
-.vscode/
+# Environment files
+.env
+.venv
+venv/
+ENV/
+env/
+
+# IDE / Editor specific
 .idea/
-*.swp
-*.swo
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Model files (if generated locally and not part of repo by design)
-*.pkl
+.vscode/
+*.sublime-project
+*.sublime-workspace
 

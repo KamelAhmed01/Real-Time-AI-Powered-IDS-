@@ -1,152 +1,146 @@
-# Real-Time AI-Powered IDS
+# Real-Time AI-Driven Intrusion Detection System
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![Python Version](https://img.shields.io/badge/python-3.x-blue.svg) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
-A robust, containerized Intrusion Detection System that leverages Suricata for real-time network traffic analysis, an Isolation Forest machine learning model for AI-driven anomaly detection, and the ELK stack for comprehensive logging and visualization.
+## Overview
 
----
+This project implements a real-time Intrusion Detection System (IDS) utilizing Suricata for network traffic analysis, nDPI for deep packet inspection, an Isolation Forest machine learning model for anomaly detection, and the ELK stack (Elasticsearch, Kibana, Filebeat) for log management and visualization. The entire system is containerized using Docker for ease of deployment and an out-of-the-box experience.
 
-## ✨ Key Objectives
+The system is designed to detect various network threats, including common attacks like SYN floods, by analyzing network flow data in real-time and flagging suspicious activities based on the AI model's predictions.
 
-- **Real-Time IDS:** Continuously monitor network traffic and identify threats as they happen.
-- **AI-Driven Detection:** Employ machine learning (Isolation Forest) to uncover malicious activities and anomalies beyond signature-based methods.
-- **Log Analysis & Visualization:** Analyze packet captures and logs, with results visualized in Kibana dashboards.
+## Features
 
----
+- **Real-Time Traffic Monitoring**: Suricata captures and inspects network traffic.
+- **AI-Driven Anomaly Detection**: An Isolation Forest model identifies anomalous network flows.
+- **Configurable Network Interface**: The Suricata monitoring interface can be easily configured.
+- **ELK Stack Integration**: Logs and alerts are shipped to Elasticsearch for analysis and visualized in Kibana.
+- **Dockerized Deployment**: All components are containerized for straightforward setup.
+- **Sample Data Included**: Comes with sample benign and attack PCAP/CSV files for immediate testing and model training.
+- **Basic Kibana Dashboard**: A template for a Kibana dashboard is provided to visualize detected anomalies.
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Linux Environment:** Ubuntu 22.04 LTS is recommended.
-- **Docker & Docker Compose:** Ensure they are installed and operational. (Min. 8GB RAM allocated to Docker is advisable).
-- **Python 3.x & Pip:** For running local scripts (model training, anomaly detection).
-- **Git:** For cloning the repository.
-- **PCAP Files:** For training the ML model (e.g., from CIC-IDS2017 or your own captures). You will need `train_benign.pcap`, `val_benign.pcap`, and `val_attack.pcap` (or similar, adjust script paths if names differ).
-- **`ndpiReader` Tool:** This tool (from the [nDPI GitHub](https://github.com/ntop/nDPI) project) is required to convert your PCAP files into the CSV flow format needed for training the model. It must be installed separately.
-
-### Repository Structure
+## Project Structure
 
 ```
 real-time-ai-ids/
-├── docker/              # Docker configurations (Dockerfile.suricata, docker-compose.yml)
-├── configs/             # Service configurations (suricata.yaml, custom.rules, filebeat.yml)
-├── scripts/             # Python scripts (train_model.py, detect_anomalies.py, requirements.txt)
-├── pcap/                # Placeholder for PCAP files and generated CSVs (add .gitkeep)
-├── logs/                # Placeholder for Suricata logs (add .gitkeep)
-├── dashboards/          # Kibana dashboard exports (suricata_anomalies.ndjson)
-├── docs/                # Project documentation (README.md, report.md)
-└── .gitignore           # Specifies intentionally untracked files
+├── docker/                 # Docker configurations
+│   ├── docker-compose.yml  # Defines all services
+│   └── Dockerfile.suricata # Builds Suricata with nDPI and rules
+│   └── custom.rules        # Custom Suricata rules (e.g., SYN flood)
+├── configs/                # Service configurations
+│   ├── suricata.yaml       # Suricata configuration (EVE JSON, nDPI, rules)
+│   └── filebeat.yml        # Filebeat configuration (ships Suricata logs to ES)
+├── scripts/                # Python scripts
+│   ├── train_model.py      # Trains the Isolation Forest model
+│   ├── detect_anomalies.py # Performs real-time anomaly detection
+│   ├── requirements.txt    # Python dependencies
+│   ├── flows_benign.csv    # Sample benign flow data for training
+│   └── flows_attack.csv    # Sample attack flow data for validation
+├── pcap/                   # Sample PCAP files
+│   ├── sample_benign.pcap  # Sample benign traffic
+│   └── sample_attack.pcap  # Sample attack traffic (SYN flood)
+├── logs/                   # Placeholder for Suricata logs (mounted in Docker)
+├── dashboards/             # Kibana dashboard templates
+│   └── suricata_anomalies.ndjson # Basic anomaly dashboard export
+├── docs/                   # Project documentation
+│   ├── README.md           # This file
+│   └── report.md           # Detailed project report
+└── .gitignore              # Specifies intentionally untracked files
 ```
 
-### Installation & Setup
+## Setup and Usage
 
-1.  **Clone the Repository:**
+### Prerequisites
+
+- Docker and Docker Compose installed on your system.
+- Git (for cloning the repository).
+
+### Installation
+
+1.  **Clone the Repository**:
 
     ```bash
-    git clone <your-repository-url>
-    cd real-time-ai-ids
+    # git clone <repository_url>
+    # cd real-time-ai-ids
     ```
 
-2.  **Prepare Training Data (PCAP to CSV):**
+2.  **Configure Network Interface (Optional)**:
+    The default network interface for Suricata is `eth0`. You can change this by setting the `SURICATA_INTERFACE` environment variable. For example, create a `.env` file in the `real-time-ai-ids/docker/` directory with the following content:
 
-    - Place your PCAP files (`train_benign.pcap`, `val_benign.pcap`, `val_attack.pcap`) into the `pcap/` directory.
-    - Use `ndpiReader` to generate CSV flow files. For example:
-      ```bash
-      # Ensure ndpiReader is in your PATH or use the full path to it
-      # Execute these from within the real-time-ai-ids/pcap/ directory or adjust paths
-      ndpiReader -i train_benign.pcap -C flows_benign.csv
-      ndpiReader -i val_benign.pcap -C flows_val_benign.csv
-      ndpiReader -i val_attack.pcap -C flows_attack.csv
-      ```
-    - Ensure the generated `flows_benign.csv`, `flows_val_benign.csv`, and `flows_attack.csv` are in the `pcap/` directory.
+    ```env
+    SURICATA_INTERFACE=your_network_interface
+    ```
 
-3.  **Install Python Dependencies & Train the Model:**
+    Alternatively, you can set it when running `docker-compose`:
 
-    - Navigate to the `scripts/` directory.
-    - Install required Python packages:
-      ```bash
-      pip3 install -r requirements.txt
-      ```
-    - Train the Isolation Forest model:
-      ```bash
-      python3 train_model.py
-      ```
-      This will create `ids_model.pkl` and `optimal_threshold.txt` in the `scripts/` directory. The `detect_anomalies.py` script will automatically use the threshold from `optimal_threshold.txt`.
+    ```bash
+    SURICATA_INTERFACE=your_network_interface docker-compose -p real_time_ai_ids up -d
+    ```
 
-4.  **Build and Launch Docker Containers:**
+3.  **Build and Start Services**:
+    Navigate to the `docker` directory and run Docker Compose:
+    ```bash
+    cd docker/
+    docker-compose -p real_time_ai_ids up -d --build
+    ```
+    This will build the custom Suricata image (which includes downloading Emerging Threats Open rules) and start all services (Elasticsearch, Kibana, Filebeat, Suricata, and the detection script).
 
-    - Navigate to the `docker/` directory.
-    - Run Docker Compose:
-      ```bash
-      sudo docker-compose up -d --build
-      ```
-      This will build the custom Suricata image and start Elasticsearch, Kibana, Filebeat, and Suricata services.
+### Initial Setup and Model Training
 
-5.  **Configure Filebeat and Kibana:**
+1.  **Wait for ELK Stack**: Allow a few minutes for Elasticsearch and Kibana to initialize fully.
 
-    - Wait a minute or two for Elasticsearch and Kibana to fully initialize.
-    - Find your Filebeat container ID: `sudo docker ps` (look for the `filebeat` image).
-    - Enable the Suricata module in Filebeat:
-      ```bash
-      sudo docker exec <filebeat_container_id_or_name> filebeat modules enable suricata
-      ```
-    - Set up Kibana dashboards (this loads default Suricata dashboards):
-      ```bash
-      sudo docker exec <filebeat_container_id_or_name> filebeat setup --dashboards
-      ```
-    - Restart Filebeat to apply changes:
-      ```bash
-      sudo docker-compose restart filebeat # Run from the docker/ directory
-      ```
+    - Elasticsearch will be available at `http://localhost:9200`.
+    - Kibana will be available at `http://localhost:5601`.
+    - Default credentials for Elasticsearch/Kibana are `elastic` / `changeme`.
 
-6.  **Start Real-Time Anomaly Detection Script:**
-    - Navigate back to the `scripts/` directory.
-    - Run the detection script (it will connect to Elasticsearch running in Docker):
-      ```bash
-      python3 detect_anomalies.py
-      ```
-      Keep this script running to continuously monitor and detect anomalies.
+2.  **Train the AI Model**:
+    The `train_model.py` script uses the provided `flows_benign.csv` and `flows_attack.csv` sample files located in the `scripts/` directory to train the `ids_model.pkl`. This model is automatically used by the `detection` service.
+    The training is part of the `detection` service startup in `docker-compose.yml` but if you need to retrain it or train it manually (e.g. after providing your own CSVs):
+    ```bash
+    docker-compose -p real_time_ai_ids exec detection python train_model.py
+    ```
+    The sample CSVs are illustrative. For production use, you should generate these from larger, representative PCAP datasets using a tool like `ndpiReader` (which is installed in the Suricata Docker image).
+    Example (run inside the Suricata container or on a host with ndpiReader and PCAPs):
+    ```bash
+    # To access ndpiReader inside the Suricata container:
+    # docker-compose -p real_time_ai_ids exec suricata bash
+    # cd /pcap # Assuming your PCAPs are mounted here or copied
+    # ndpiReader -i your_benign_traffic.pcap -C /app/flows_benign.csv # Output to scripts dir
+    # ndpiReader -i your_attack_traffic.pcap -C /app/flows_attack.csv # Output to scripts dir
+    ```
+    Then copy these CSVs to the `scripts` directory on your host if generated outside, or ensure paths are correct for the `train_model.py` script if run inside a container.
 
----
+### Real-Time Detection
 
-## 🛠️ Usage
+The `detection` service automatically starts the `detect_anomalies.py` script. This script continuously queries Elasticsearch for new flow data from Suricata, processes it using the trained `ids_model.pkl`, and indexes any detected anomalies into a new Elasticsearch index named `suricata-anomalies`.
 
-- **Kibana:** Access Kibana at `http://localhost:5601` in your browser.
-  - Credentials: username `elastic`, password `changeme` (change these in a production environment!).
-  - Explore Suricata logs and alerts (e.g., under Discover, or the `[Filebeat Suricata] Events Overview` dashboard).
-  - To view AI-detected anomalies, create a new Data View (formerly Index Pattern) in Kibana for `suricata-anomalies*`. Then you can explore these in Discover or build/import a custom dashboard (a placeholder `dashboards/suricata_anomalies.ndjson` is provided; you would typically export your own from Kibana).
-- **Suricata Logs:** Raw EVE JSON logs are stored in `logs/eve.json` (mounted from the Suricata container).
-- **Anomaly Detection Script:** The `detect_anomalies.py` script will print output to the console, indicating the number of flows processed and anomalies found.
+### Viewing Results in Kibana
 
----
+1.  Access Kibana at `http://localhost:5601`.
+2.  Log in with `elastic` / `changeme`.
+3.  **Import Dashboard (Optional)**:
+    - Navigate to "Stack Management" > "Saved Objects".
+    - Click "Import" and upload the `dashboards/suricata_anomalies.ndjson` file.
+    - This provides a basic dashboard to visualize data from the `suricata-anomalies` index.
+4.  **Explore Data**:
+    - You can create your own visualizations and dashboards in Kibana.
+    - Explore the `filebeat-*` indices for raw Suricata logs and the `suricata-anomalies` index for detected anomalies.
 
-## ⚠️ Troubleshooting & Notes
+## Troubleshooting
 
-- **Docker Daemon Issues:** If `docker-compose up` fails, ensure your Docker daemon is running correctly and has sufficient permissions. Some environments (like certain sandboxes) might have conflicts (e.g., `iptables/nftables`).
-- **Elasticsearch Connection:** If `detect_anomalies.py` can't connect to Elasticsearch:
-  - Verify Elasticsearch is running: `sudo docker ps`.
-  - Check container logs: `sudo docker logs <elasticsearch_container_id>`.
-  - Ensure the hostname `elasticsearch` is resolvable from where you run the script (if not running on the same Docker host network, you might need to expose Elasticsearch differently or adjust connection settings).
-- **Resource Usage:** The ELK stack and Suricata can be resource-intensive. Monitor your system resources.
-- **`ndpiReader`:** This tool is crucial for generating the training CSVs. Ensure it's correctly installed and used.
-- **`optimal_threshold`:** The `train_model.py` script attempts to find an optimal threshold. If validation data is insufficient or problematic, it might default. Manual tuning or better validation data might be needed for optimal performance.
-- **Security:** The default Elasticsearch password is `changeme`. **This must be changed for any non-testing deployment.** Refer to Elastic documentation for securing your ELK stack.
+- **Elasticsearch Fails to Start**: Check Docker logs (`docker-compose -p real_time_ai_ids logs elasticsearch`). Common issues include insufficient memory. You might need to increase `ES_JAVA_OPTS` in `docker-compose.yml` (e.g., to `-Xms1g -Xmx1g`) if your system has enough RAM.
+- **No Logs in Kibana / `suricata-anomalies` index empty**:
+  - Verify Suricata is running and capturing traffic on the correct interface (`docker-compose -p real_time_ai_ids logs suricata`).
+  - Check Filebeat logs (`docker-compose -p real_time_ai_ids logs filebeat`) for errors shipping logs to Elasticsearch.
+  - Ensure `eve.json` is being populated in `real-time-ai-ids/logs/`.
+  - Check `detection` service logs (`docker-compose -p real_time_ai_ids logs detection`) for errors in the anomaly detection script.
+- **Suricata Not Capturing Traffic**: Ensure the `SURICATA_INTERFACE` is correctly set to an active network interface with traffic. Use tools like `tcpdump` on the host or inside the Suricata container to verify traffic on the interface.
+- **Authentication Errors**: Confirm the default credentials (`elastic`/`changeme`) are used consistently if not changed. If you change them, update `docker-compose.yml`, `filebeat.yml`, and `detect_anomalies.py` accordingly.
 
----
+## Further Development
 
-## 📄 Documentation
+- **Enhance Anomaly Detection Model**: Experiment with different features, models, or hyperparameter tuning.
+- **Expand Suricata Rules**: Integrate more comprehensive rule sets.
+- **Improve Kibana Dashboards**: Create more detailed and insightful visualizations.
+- **Alerting Mechanisms**: Implement real-time alerting (e.g., email, Slack) for critical anomalies.
 
-For a more in-depth understanding of the project design, architecture, implementation details, and limitations, please refer to the [Project Report](./Project_Report_Real-Time_AI-Powered_IDS.pdf).
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License.
+For a more detailed explanation of the project's design, components, and implementation, please refer to `docs/report.md`.

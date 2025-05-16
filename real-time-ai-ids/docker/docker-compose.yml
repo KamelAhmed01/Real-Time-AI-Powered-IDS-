@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTIC_PASSWORD=changeme # User confirmed to leave defaults
+      - xpack.security.enabled=true
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.0.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic # User confirmed to leave defaults
+      - ELASTICSEARCH_PASSWORD=changeme # User confirmed to leave defaults
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.0.1
+    container_name: filebeat
+    user: root
+    volumes:
+      - ../configs/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ../logs:/var/log/suricata:ro # Mount relative to docker-compose.yml location
+    depends_on:
+      - elasticsearch
+      - kibana
+
+  suricata:
+    build:
+      context: . # Context is the docker directory where Dockerfile.suricata is
+      dockerfile: Dockerfile.suricata
+    container_name: suricata
+    cap_add:
+      - NET_ADMIN
+    network_mode: host # For easy access to host network interfaces
+    environment:
+      - SURICATA_INTERFACE=eth0 # Default interface, user can override this in .env file or compose command
+    volumes:
+      - ../configs/suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - ../pcap:/pcap:ro # Mount relative to docker-compose.yml location
+      - ../logs:/var/log/suricata # Mount relative to docker-compose.yml location
+    command: sh -c "suricata -c /etc/suricata/suricata.yaml -i $$SURICATA_INTERFACE"
+
+  detection:
+    image: python:3.9
+    container_name: detection
+    volumes:
+      - ../scripts:/app # Mount relative to docker-compose.yml location
+    working_dir: /app
+    command: ["sh", "-c", "pip install -r requirements.txt && python detect_anomalies.py"]
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esdata: {}
+
