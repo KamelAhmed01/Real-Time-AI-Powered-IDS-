@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     build-essential autoconf automake libtool git \
-    libpcap-dev libpcre3-dev libyaml-dev zlib1g-dev \
+    libpcap-dev libpcre2-dev libyaml-dev zlib1g-dev \
     libjansson-dev rustc cargo libmagic-dev libnetfilter-queue-dev \
     python3-pip curl wget
 
